@@ -56,13 +56,38 @@ apiClient.interceptors.response.use(
           postData = JSON.parse(error?.config?.data || '{}');
         } catch (_e) {}
 
-        const role = postData.role || (url.includes('company') ? 'BIOCHAR_COMPANY' : 'FARMER');
+        const em = (postData.email || '').toLowerCase();
+        const role = postData.role || (url.includes('company') || em.includes('company') ? 'BIOCHAR_COMPANY' : em.includes('panchayat') ? 'GRAM_PANCHAYAT' : em.includes('supplier') ? 'SUPPLIER' : 'FARMER');
+        const userName = postData.name || (role === 'BIOCHAR_COMPANY' ? 'AgroMaya Biochar Industries' : role === 'GRAM_PANCHAYAT' ? 'Harihara Gram Panchayat Hub' : role === 'SUPPLIER' ? 'Kaveri Bio-Inputs Hub' : 'Tarun M');
+
         const user: User = {
           id: `usr_${Date.now()}`,
-          name: postData.name || 'tarunm',
-          phone: postData.phone || '9019789795',
-          email: postData.email || `${postData.phone || 'farmer'}@agromaya.local`,
+          name: userName,
+          phone: postData.phone || (postData.email && !postData.email.includes('@') ? postData.email : '9019789795'),
+          email: postData.email || 'taruntarudvg@gmail.com',
           role: role,
+          farmerProfile: role === 'FARMER' ? {
+            id: 'farmer_tarun',
+            fullName: 'Tarun M',
+            phone: '9019789795',
+            surveyNumber: 'SY-45',
+            totalLandAcres: 3.0,
+            village: { name: 'Davanagere Rural' },
+            panchayat: { name: 'Davangere Taluk Panchayat' },
+            wallet: { balanceCredits: 2200, totalEarnedCredits: 4200, totalRedeemedCredits: 2000 },
+          } : undefined,
+          companyProfile: role === 'BIOCHAR_COMPANY' ? {
+            id: 'company_tarun',
+            companyName: 'AgroMaya Biochar Industries',
+            district: 'Davangere',
+            capacityTonnes: 120,
+          } : undefined,
+          supplierProfile: role === 'SUPPLIER' ? {
+            id: 'supplier_tarun',
+            supplierName: 'Kaveri Bio-Inputs Hub',
+            district: 'Davangere',
+            gstin: 'GSTIN29AAACA1234Z5',
+          } : undefined,
         };
 
         return Promise.resolve({
@@ -74,7 +99,7 @@ apiClient.interceptors.response.use(
             success: true,
             token: `agromaya_token_${Date.now()}`,
             user,
-            message: 'Authenticated successfully',
+            message: 'Authenticated successfully as ' + userName,
           },
         });
       }

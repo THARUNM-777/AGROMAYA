@@ -72,7 +72,7 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMessage('');
     try {
-      const user = await login(loginIdentifier, loginPassword);
+      const user = await login(loginIdentifier || '9019789795', loginPassword || 'tarun123');
       routeByRole(user.role);
     } catch (err: any) {
       setErrorMessage(
@@ -205,8 +205,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    required
-                    placeholder="e.g. 9876543210 or company@agromaya.in"
+                    placeholder="Enter any letters, phone (9019789795), or email"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     className="block w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -224,8 +223,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="••••••••••••"
+                    placeholder="Enter any password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     className="block w-full pl-9 pr-10 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -238,6 +236,9 @@ export const LoginPage: React.FC = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
+                  💡 Type any letter or password — automatically logs in as <strong className="text-emerald-700 font-bold">Tarun M</strong>!
+                </p>
               </div>
 
               <button
@@ -506,6 +507,17 @@ export const LoginPage: React.FC = () => {
 
             {showCredentialsReference && (
               <div className="mt-3 space-y-1.5 text-[11px] bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div
+                  onClick={() => fillQuickCredential('9019789795', 'tarun123')}
+                  className="flex items-center justify-between p-2 rounded-xl bg-emerald-100/90 hover:bg-emerald-200 cursor-pointer border border-emerald-300 transition-colors shadow-2xs"
+                >
+                  <span className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                    🌾 Tarun M (Verified Farmer)
+                  </span>
+                  <span className="font-mono text-emerald-800 text-[10px] font-bold">9019789795 (Click to Fill)</span>
+                </div>
+
                 <div
                   onClick={() => fillQuickCredential('company@agromaya.in', 'Agromaya@2026')}
                   className="flex items-center justify-between p-2 rounded-xl bg-white hover:bg-emerald-50 cursor-pointer border border-slate-100 transition-colors"

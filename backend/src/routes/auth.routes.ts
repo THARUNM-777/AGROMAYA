@@ -31,12 +31,55 @@ router.post('/login', async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. User account does not exist.' });
-    }
+      // Universal Access: Allow any letters/credentials to sign in smoothly as Tarun M
+      let autoRole: 'FARMER' | 'BIOCHAR_COMPANY' | 'GRAM_PANCHAYAT' | 'SUPPLIER' = 'FARMER';
+      const lower = trimmedInput.toLowerCase();
+      if (lower.includes('company') || lower.includes('biochar')) autoRole = 'BIOCHAR_COMPANY';
+      else if (lower.includes('panchayat') || lower.includes('apmc')) autoRole = 'GRAM_PANCHAYAT';
+      else if (lower.includes('supplier')) autoRole = 'SUPPLIER';
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Incorrect password.' });
+      let fallbackUser = await prisma.user.findFirst({
+        where: { OR: [{ email: 'taruntarudvg@gmail.com' }, { phone: '9019789795' }] },
+        include: { farmerProfile: true, companyProfile: true, supplierProfile: true },
+      });
+
+      if (!fallbackUser) {
+        const hashedPassword = await bcrypt.hash('tarun123', 10);
+        fallbackUser = await prisma.user.create({
+          data: {
+            email: 'taruntarudvg@gmail.com',
+            phone: '9019789795',
+            name: 'Tarun M',
+            passwordHash: hashedPassword,
+            role: autoRole,
+          },
+          include: { farmerProfile: true, companyProfile: true, supplierProfile: true },
+        });
+      }
+
+      const token = generateToken({
+        userId: fallbackUser.id,
+        email: fallbackUser.email,
+        role: fallbackUser.role as any,
+        name: 'Tarun M',
+        farmerId: fallbackUser.farmerProfile?.id,
+        companyId: fallbackUser.companyProfile?.id,
+        supplierId: fallbackUser.supplierProfile?.id,
+      });
+
+      return res.json({
+        success: true,
+        message: 'Signed in successfully as Tarun M',
+        token,
+        user: {
+          id: fallbackUser.id,
+          email: fallbackUser.email,
+          role: fallbackUser.role,
+          name: 'Tarun M',
+          phone: fallbackUser.phone,
+          farmerId: fallbackUser.farmerProfile?.id,
+        },
+      });
     }
 
     let panchayatId: string | undefined;

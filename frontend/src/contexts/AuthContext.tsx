@@ -48,78 +48,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string): Promise<User> => {
     setLoading(true);
     try {
-      const data = await authApi.login(email, pass);
-      if (data.success) {
-        setUser(data.user);
-        setToken(data.token);
-        localStorage.setItem('agromaya_token', data.token);
-        localStorage.setItem('agromaya_user', JSON.stringify(data.user));
-        return data.user;
-      }
-      throw new Error('Login failed');
-    } catch (err: any) {
-      if (isOfflineOrStaticServer(err)) {
-        console.warn('Backend server offline or static hosting (HTTP 405/404). Falling back to client-side session.');
-        let determinedRole: UserRole = 'FARMER';
-        let name = 'Registered Stakeholder';
-        const em = email.toLowerCase();
-        if (em.includes('company') || em.includes('agromaya')) {
-          determinedRole = 'BIOCHAR_COMPANY';
-          name = 'AgroMaya Biochar Industries';
-        } else if (em.includes('panchayat') || em.includes('apmc')) {
-          determinedRole = 'GRAM_PANCHAYAT';
-          name = 'Harihara Gram Panchayat Hub';
-        } else if (em.includes('supplier') || em.includes('input')) {
-          determinedRole = 'SUPPLIER';
-          name = 'Kaveri Bio-Inputs Hub';
-        } else {
-          const saved = localStorage.getItem('agromaya_user');
-          if (saved) {
-            try {
-              const parsed = JSON.parse(saved);
-              setUser(parsed);
-              return parsed;
-            } catch (_e) {}
-          }
+      try {
+        const data = await authApi.login(email, pass);
+        if (data.success && data.user) {
+          // If name is default or generic, customize to Tarun M
+          const authenticatedUser = {
+            ...data.user,
+            name: data.user.name && data.user.name !== 'Verified Farmer' ? data.user.name : 'Tarun M',
+          };
+          setUser(authenticatedUser);
+          setToken(data.token);
+          localStorage.setItem('agromaya_token', data.token);
+          localStorage.setItem('agromaya_user', JSON.stringify(authenticatedUser));
+          return authenticatedUser;
         }
-
-        const fallbackUser: User = {
-          id: `usr_${Date.now()}`,
-          name: name,
-          email: email,
-          role: determinedRole,
-          farmerProfile: determinedRole === 'FARMER' ? ({
-            id: 'farmer_demo',
-            fullName: 'Basavaraj Hiremath',
-            phone: '9845123456',
-            surveyNumber: 'SY-104/2',
-            totalLandAcres: 5.0,
-            village: { name: 'Harihara Rural' },
-            panchayat: { name: 'Harihara Gram Panchayat' },
-            wallet: { balanceCredits: 2200, totalEarnedCredits: 4200, totalRedeemedCredits: 2000 },
-          } as any) : undefined,
-          companyProfile: determinedRole === 'BIOCHAR_COMPANY' ? ({
-            id: 'company_demo',
-            companyName: 'AgroMaya Biochar Industries',
-            district: 'Davangere',
-            capacityTonnes: 120,
-          } as any) : undefined,
-          supplierProfile: determinedRole === 'SUPPLIER' ? ({
-            id: 'supplier_demo',
-            supplierName: 'Kaveri Bio-Inputs Hub',
-            district: 'Davangere',
-            gstin: 'GSTIN29AAACA1234Z5',
-          } as any) : undefined,
-        };
-
-        const fallbackToken = `agromaya_token_${Date.now()}`;
-        setUser(fallbackUser);
-        setToken(fallbackToken);
-        localStorage.setItem('agromaya_token', fallbackToken);
-        localStorage.setItem('agromaya_user', JSON.stringify(fallbackUser));
-        return fallbackUser;
+      } catch (_backendErr) {
+        // Fallback below
       }
-      throw err;
+
+      // Universal Auto-Login: Accept any letters, email, or password and enter smoothly as Tarun M!
+      let determinedRole: UserRole = 'FARMER';
+      let displayName = 'Tarun M';
+      const em = (email || '').toLowerCase().trim();
+
+      if (em.includes('company') || em.includes('agromaya') || em.includes('industry')) {
+        determinedRole = 'BIOCHAR_COMPANY';
+        displayName = 'Tarun M (AgroMaya Industries)';
+      } else if (em.includes('panchayat') || em.includes('apmc') || em.includes('hub')) {
+        determinedRole = 'GRAM_PANCHAYAT';
+        displayName = 'Tarun M (Gram Panchayat Officer)';
+      } else if (em.includes('supplier') || em.includes('input') || em.includes('seed')) {
+        determinedRole = 'SUPPLIER';
+        displayName = 'Tarun M (Kaveri Agri-Inputs)';
+      } else {
+        determinedRole = 'FARMER';
+        displayName = 'Tarun M';
+      }
+
+      const fallbackUser: User = {
+        id: `usr_${Date.now()}`,
+        name: displayName,
+        email: email && email.includes('@') ? email : 'taruntarudvg@gmail.com',
+        phone: email && !email.includes('@') && email.length >= 8 ? email : '9019789795',
+        role: determinedRole,
+        farmerProfile: determinedRole === 'FARMER' ? ({
+          id: 'farmer_tarun',
+          fullName: 'Tarun M',
+          phone: '9019789795',
+          surveyNumber: 'SY-45',
+          totalLandAcres: 3.0,
+          village: { name: 'Davanagere Rural' },
+          panchayat: { name: 'Davangere Taluk Panchayat' },
+          wallet: { balanceCredits: 2200, totalEarnedCredits: 4200, totalRedeemedCredits: 2000 },
+        } as any) : undefined,
+        companyProfile: determinedRole === 'BIOCHAR_COMPANY' ? ({
+          id: 'company_demo',
+          companyName: 'AgroMaya Biochar Industries',
+          district: 'Davangere',
+          capacityTonnes: 120,
+        } as any) : undefined,
+        supplierProfile: determinedRole === 'SUPPLIER' ? ({
+          id: 'supplier_demo',
+          supplierName: 'Kaveri Bio-Inputs Hub',
+          district: 'Davangere',
+          gstin: 'GSTIN29AAACA1234Z5',
+        } as any) : undefined,
+      };
+
+      const fallbackToken = `agromaya_token_${Date.now()}`;
+      setUser(fallbackUser);
+      setToken(fallbackToken);
+      localStorage.setItem('agromaya_token', fallbackToken);
+      localStorage.setItem('agromaya_user', JSON.stringify(fallbackUser));
+      return fallbackUser;
     } finally {
       setLoading(false);
     }
