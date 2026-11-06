@@ -12,6 +12,10 @@ export interface User {
   supplierId?: string;
   companyName?: string;
   supplierName?: string;
+  farmerProfile?: any;
+  companyProfile?: any;
+  supplierProfile?: any;
+  [key: string]: any;
 }
 
 export type FieldStatus = 'HARVEST_READY' | 'HARVEST_APPROACHING' | 'COLLECTED' | 'GROWING' | 'UNVERIFIED';
