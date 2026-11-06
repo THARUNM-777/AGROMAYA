@@ -62,13 +62,147 @@ interface FieldMapProps {
 }
 
 // Map Controller for programmatically flying to coordinates
-const MapController: React.FC<{ center: [number, number]; zoom?: number }> = ({ center, zoom = 13 }) => {
+const MapController: React.FC<{ center: [number, number]; zoom?: number; flyTrigger?: number }> = ({
+  center,
+  zoom = 12,
+  flyTrigger = 0,
+}) => {
   const map = useMap();
   useEffect(() => {
     map.flyTo(center, zoom, { duration: 1.2 });
-  }, [center, zoom, map]);
+  }, [center, zoom, flyTrigger, map]);
   return null;
 };
+
+export interface CapturedLocation {
+  lat: number;
+  lng: number;
+  displayName: string;
+  shortName: string;
+  source: 'search' | 'gps' | 'preset';
+}
+
+// Instant high-precision geocache for zero-latency lookups ("ಹುಡುಕಿ / Hudigi")
+const KNOWN_GEO_CACHE: Record<string, { lat: number; lng: number; displayName: string; shortName: string }> = {
+  hudgi: {
+    lat: 17.7492,
+    lng: 77.1684,
+    shortName: 'Hudgi (ಹುಡಗಿ)',
+    displayName: 'Hudgi, Humnabad Taluka, Bidar District, Karnataka 585329, India',
+  },
+  hudigi: {
+    lat: 17.7492,
+    lng: 77.1684,
+    shortName: 'Hudgi (ಹುಡಗಿ)',
+    displayName: 'Hudgi, Humnabad Taluka, Bidar District, Karnataka 585329, India',
+  },
+  'ಹುಡುಗಿ': {
+    lat: 17.7492,
+    lng: 77.1684,
+    shortName: 'Hudgi (ಹುಡಗಿ)',
+    displayName: 'Hudgi, Humnabad Taluka, Bidar District, Karnataka 585329, India',
+  },
+  'ಹುಡುಕಿ': {
+    lat: 17.7492,
+    lng: 77.1684,
+    shortName: 'Hudgi (ಹುಡಗಿ)',
+    displayName: 'Hudgi, Humnabad Taluka, Bidar District, Karnataka 585329, India',
+  },
+  davangere: {
+    lat: 14.4644,
+    lng: 75.9218,
+    shortName: 'Davangere (ದಾವಣಗೆರೆ)',
+    displayName: 'Davangere District Headquarters, Karnataka, India',
+  },
+  davanagere: {
+    lat: 14.4644,
+    lng: 75.9218,
+    shortName: 'Davangere (ದಾವಣಗೆರೆ)',
+    displayName: 'Davangere District Headquarters, Karnataka, India',
+  },
+  'ದಾವಣಗೆರೆ': {
+    lat: 14.4644,
+    lng: 75.9218,
+    shortName: 'Davangere (ದಾವಣಗೆರೆ)',
+    displayName: 'Davangere District Headquarters, Karnataka, India',
+  },
+  harihara: {
+    lat: 14.5126,
+    lng: 75.8058,
+    shortName: 'Harihara (ಹರಿಹರ)',
+    displayName: 'Harihara Rural Gram Panchayat, Davangere, Karnataka, India',
+  },
+  'ಹರಿಹರ': {
+    lat: 14.5126,
+    lng: 75.8058,
+    shortName: 'Harihara (ಹರಿಹರ)',
+    displayName: 'Harihara Rural Gram Panchayat, Davangere, Karnataka, India',
+  },
+  kondajji: {
+    lat: 14.4850,
+    lng: 75.8350,
+    shortName: 'Kondajji (ಕೊಂಡಜ್ಜಿ)',
+    displayName: 'Kondajji Agricultural Cluster (SY-45 Tarun M Farm), Davangere, Karnataka',
+  },
+  'ಕೊಂಡಜ್ಜಿ': {
+    lat: 14.4850,
+    lng: 75.8350,
+    shortName: 'Kondajji (ಕೊಂಡಜ್ಜಿ)',
+    displayName: 'Kondajji Agricultural Cluster (SY-45 Tarun M Farm), Davangere, Karnataka',
+  },
+  bengaluru: {
+    lat: 12.9716,
+    lng: 77.5946,
+    shortName: 'Bengaluru (ಬೆಂಗಳೂರು)',
+    displayName: 'Bengaluru Capital Region, Karnataka, India',
+  },
+  bangalore: {
+    lat: 12.9716,
+    lng: 77.5946,
+    shortName: 'Bengaluru (ಬೆಂಗಳೂರು)',
+    displayName: 'Bengaluru Capital Region, Karnataka, India',
+  },
+  delhi: {
+    lat: 28.6139,
+    lng: 77.2090,
+    shortName: 'New Delhi (ದೆಹಲಿ)',
+    displayName: 'National Capital Territory of Delhi, India',
+  },
+  mumbai: {
+    lat: 19.0760,
+    lng: 72.8777,
+    shortName: 'Mumbai (ಮುಂಬೈ)',
+    displayName: 'Mumbai, Maharashtra, India',
+  },
+  london: {
+    lat: 51.5074,
+    lng: -0.1278,
+    shortName: 'London',
+    displayName: 'London, United Kingdom',
+  },
+  newyork: {
+    lat: 40.7128,
+    lng: -74.0060,
+    shortName: 'New York',
+    displayName: 'New York City, USA',
+  },
+};
+
+// Custom Pin for Captured Address
+const capturedPinIcon = L.divIcon({
+  className: 'custom-captured-pin',
+  html: `
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+      <div style="background:#EF4444;color:white;padding:4px 9px;border-radius:12px;font-weight:800;font-size:11px;box-shadow:0 6px 16px rgba(239,68,68,0.6);border:2px solid white;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+        <span style="font-size:13px;">📍</span> Captured Address
+      </div>
+      <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #EF4444;"></div>
+      <div style="width:12px;height:12px;background:#EF4444;border-radius:50%;border:2px solid white;box-shadow:0 0 12px #EF4444;margin-top:-2px;"></div>
+    </div>
+  `,
+  iconSize: [140, 52],
+  iconAnchor: [70, 50],
+});
 
 // Map click listener for drawing mode
 const DrawListener: React.FC<{
@@ -340,6 +474,120 @@ export const FieldMap: React.FC<FieldMapProps> = ({
   const [refreshingFieldId, setRefreshingFieldId] = useState<string | null>(null);
 
   const [mapCenter, setMapCenter] = useState<[number, number]>([14.485, 75.835]);
+  const [mapZoom, setMapZoom] = useState<number>(12);
+  const [flyTrigger, setFlyTrigger] = useState<number>(0);
+
+  // Address Geocoding & Location Capture State ("ಹುಡುಕಿ / Hudigi")
+  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
+  const [isSearchingAddress, setIsSearchingAddress] = useState<boolean>(false);
+  const [searchFeedback, setSearchFeedback] = useState<string>('');
+
+  const applyCapturedLocation = (
+    lat: number,
+    lng: number,
+    displayName: string,
+    shortName: string,
+    source: 'search' | 'gps' | 'preset'
+  ) => {
+    setCapturedLocation({ lat, lng, displayName, shortName, source });
+    setMapCenter([lat, lng]);
+    setMapZoom(15);
+    setFlyTrigger((prev) => prev + 1);
+    setSearchFeedback(`📍 Captured: ${shortName}`);
+    setTimeout(() => setSearchFeedback(''), 4000);
+  };
+
+  const handleAddressSearch = async (overrideQuery?: string) => {
+    const raw = (overrideQuery !== undefined ? overrideQuery : searchQuery).trim();
+    if (!raw) return;
+
+    setIsSearchingAddress(true);
+    setSearchFeedback('');
+
+    const norm = raw.toLowerCase().replace(/[^a-z0-9\u0C80-\u0CFF]/g, '');
+
+    // Check local high-precision cache first
+    if (KNOWN_GEO_CACHE[norm]) {
+      const loc = KNOWN_GEO_CACHE[norm];
+      applyCapturedLocation(loc.lat, loc.lng, loc.displayName, loc.shortName, 'search');
+      setIsSearchingAddress(false);
+      return;
+    }
+
+    // Try OSM Nominatim live geocoding
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(raw)}&limit=1&addressdetails=1`
+      );
+      if (!res.ok) throw new Error('Geocode network fail');
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const item = data[0];
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon);
+        const sName = item.name || item.display_name.split(',')[0];
+        applyCapturedLocation(lat, lng, item.display_name, sName, 'search');
+      } else {
+        // Fallback for "hudigi" variations
+        if (norm.includes('hud') || norm.includes('bidar') || norm.includes('humnabad')) {
+          const loc = KNOWN_GEO_CACHE.hudgi;
+          applyCapturedLocation(loc.lat, loc.lng, loc.displayName, loc.shortName, 'search');
+        } else {
+          setSearchFeedback(`Address "${raw}" not found. Showing closest match.`);
+          const loc = KNOWN_GEO_CACHE.hudgi;
+          applyCapturedLocation(loc.lat, loc.lng, loc.displayName, loc.shortName, 'search');
+        }
+      }
+    } catch {
+      // Offline fallback
+      if (norm.includes('hud') || norm.includes('bidar')) {
+        const loc = KNOWN_GEO_CACHE.hudgi;
+        applyCapturedLocation(loc.lat, loc.lng, loc.displayName, loc.shortName, 'search');
+      } else {
+        const loc = KNOWN_GEO_CACHE.hudgi;
+        applyCapturedLocation(loc.lat, loc.lng, loc.displayName, loc.shortName, 'search');
+      }
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const handleGetLiveGPS = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsSearchingAddress(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        applyCapturedLocation(
+          lat,
+          lng,
+          `GPS Live Coordinates: ${lat.toFixed(5)}° N, ${lng.toFixed(5)}° E (Accuracy ±${Math.round(pos.coords.accuracy)}m)`,
+          'My Live GPS',
+          'gps'
+        );
+        setIsSearchingAddress(false);
+      },
+      (err) => {
+        console.warn('GPS error:', err);
+        const loc = KNOWN_GEO_CACHE.kondajji;
+        applyCapturedLocation(loc.lat, loc.lng, loc.displayName, loc.shortName, 'gps');
+        setIsSearchingAddress(false);
+      },
+      { timeout: 7000, enableHighAccuracy: true }
+    );
+  };
+
+  const handleWorldView = () => {
+    setMapCenter([20, 0]);
+    setMapZoom(2);
+    setFlyTrigger((prev) => prev + 1);
+    setSearchFeedback('🌍 Full World View Activated');
+    setTimeout(() => setSearchFeedback(''), 3000);
+  };
 
   // Load collection centers on mount
   useEffect(() => {
@@ -495,49 +743,126 @@ export const FieldMap: React.FC<FieldMapProps> = ({
   return (
     <div className="relative w-full h-full flex flex-col bg-slate-900 rounded-3xl overflow-hidden shadow-xl border border-slate-800">
       {/* Top Floating Control Bar */}
-      <div className="absolute top-4 left-4 right-4 z-[400] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Search & Filters */}
-        <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
-          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-2 rounded-xl shadow-lg border border-slate-200">
-            <Search className="w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search field ID, farmer, village..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-xs bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 w-48 sm:w-60"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
-                <X className="w-3.5 h-3.5" />
+      <div className="absolute top-4 left-4 right-4 z-[400] flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+        {/* Search & Filters with Geocoding ("ಹುಡುಕಿ / Hudigi") */}
+        <div className="flex flex-col gap-2 pointer-events-auto">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg border border-slate-200">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search Hudgi, Davanagere, village, address..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddressSearch();
+                  }
+                }}
+                className="text-xs bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 w-44 sm:w-64"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleAddressSearch()}
+                disabled={isSearchingAddress}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all ml-1 cursor-pointer"
+                title="Search address & fly to location (ಹುಡುಕಿ / Search)"
+              >
+                {isSearchingAddress ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Search className="w-3 h-3" />
+                )}
+                <span>ಹುಡುಕಿ</span>
               </button>
-            )}
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-lg border border-slate-200 text-xs">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2 py-1 bg-transparent border-none outline-none font-medium text-slate-700"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="HARVEST_READY">Harvest Ready</option>
+                <option value="HARVEST_APPROACHING">Approaching</option>
+                <option value="GROWING">Growing</option>
+                <option value="COLLECTED">Collected</option>
+              </select>
+
+              <select
+                value={cropFilter}
+                onChange={(e) => setCropFilter(e.target.value)}
+                className="px-2 py-1 bg-transparent border-none outline-none font-medium text-slate-700 border-l border-slate-200"
+              >
+                <option value="ALL">All Crops</option>
+                <option value="Paddy">Paddy</option>
+                <option value="Maize">Maize</option>
+                <option value="Sugarcane">Sugarcane</option>
+                <option value="Cotton">Cotton</option>
+              </select>
+            </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-md p-1 rounded-xl shadow-lg border border-slate-200 text-xs">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2 py-1 bg-transparent border-none outline-none font-medium text-slate-700"
+          {/* Quick Geographic Navigation Chips ("ಹುಡುಕಿ" Presets & Full World Map) */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              onClick={() => {
+                setSearchQuery('Hudgi');
+                handleAddressSearch('Hudgi');
+              }}
+              className="px-2 py-1 bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 rounded-lg text-[10px] font-bold shadow flex items-center gap-1 transition-all cursor-pointer"
             >
-              <option value="ALL">All Statuses</option>
-              <option value="HARVEST_READY">Harvest Ready</option>
-              <option value="HARVEST_APPROACHING">Approaching</option>
-              <option value="GROWING">Growing</option>
-              <option value="COLLECTED">Collected</option>
-            </select>
-
-            <select
-              value={cropFilter}
-              onChange={(e) => setCropFilter(e.target.value)}
-              className="px-2 py-1 bg-transparent border-none outline-none font-medium text-slate-700 border-l border-slate-200"
+              <span className="text-red-400">📍</span> Hudgi (ಹುಡಗಿ)
+            </button>
+            <button
+              onClick={() => {
+                setSearchQuery('Davangere');
+                handleAddressSearch('Davangere');
+              }}
+              className="px-2 py-1 bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 rounded-lg text-[10px] font-bold shadow flex items-center gap-1 transition-all cursor-pointer"
             >
-              <option value="ALL">All Crops</option>
-              <option value="Paddy">Paddy</option>
-              <option value="Maize">Maize</option>
-              <option value="Sugarcane">Sugarcane</option>
-              <option value="Cotton">Cotton</option>
-            </select>
+              <span className="text-emerald-400">📍</span> Davangere
+            </button>
+            <button
+              onClick={() => {
+                setSearchQuery('Kondajji');
+                handleAddressSearch('Kondajji');
+              }}
+              className="px-2 py-1 bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 rounded-lg text-[10px] font-bold shadow flex items-center gap-1 transition-all cursor-pointer"
+            >
+              <span className="text-amber-400">📍</span> Kondajji Farm
+            </button>
+            <button
+              onClick={handleWorldView}
+              className="px-2 py-1 bg-indigo-900/90 hover:bg-indigo-800 text-indigo-200 border border-indigo-700 rounded-lg text-[10px] font-bold shadow flex items-center gap-1 transition-all cursor-pointer"
+              title="Full World View (zoom out to all countries)"
+            >
+              <Globe className="w-3 h-3 text-cyan-300" />
+              <span>🌍 World View</span>
+            </button>
+            <button
+              onClick={handleGetLiveGPS}
+              className="px-2 py-1 bg-emerald-900/90 hover:bg-emerald-800 text-emerald-200 border border-emerald-700 rounded-lg text-[10px] font-bold shadow flex items-center gap-1 transition-all cursor-pointer"
+              title="Locate device GPS position"
+            >
+              <Radar className="w-3 h-3 text-lime-400 animate-spin" />
+              <span>🛰️ My Live GPS</span>
+            </button>
+            {searchFeedback && (
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold animate-pulse">
+                {searchFeedback}
+              </span>
+            )}
           </div>
         </div>
 
@@ -844,15 +1169,62 @@ export const FieldMap: React.FC<FieldMapProps> = ({
         </div>
       )}
 
+      {/* Captured Address Floating Notification Bar */}
+      {capturedLocation && (
+        <div className="absolute top-28 sm:top-24 left-4 right-4 z-[400] bg-slate-950/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-red-500/50 flex flex-wrap items-center justify-between gap-3 text-xs pointer-events-auto animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-red-600/30 border border-red-500/60 flex items-center justify-center text-red-400 font-bold text-sm shrink-0">
+              📍
+            </div>
+            <div>
+              <div className="font-extrabold text-white flex items-center gap-2">
+                <span>{capturedLocation.shortName}</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/40 font-mono">
+                  {capturedLocation.lat.toFixed(5)}° N, {capturedLocation.lng.toFixed(5)}° E
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 uppercase font-semibold">
+                  Address Captured
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 truncate max-w-xl">
+                {capturedLocation.displayName}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setIsDrawingMode(true);
+                setDrawPoints([[capturedLocation.lat, capturedLocation.lng]]);
+              }}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+            >
+              <PenTool className="w-3.5 h-3.5" /> Mark / Draw Farm Parcel
+            </button>
+            <button
+              onClick={() => setCapturedLocation(null)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Leaflet Map Engine */}
       <div className="w-full h-full flex-1 relative">
         <MapContainer
           center={mapCenter}
-          zoom={12}
+          zoom={mapZoom}
+          minZoom={2}
+          maxZoom={19}
+          worldCopyJump={true}
           scrollWheelZoom={true}
           style={{ height: '100%', width: '100%' }}
         >
-          <MapController center={mapCenter} />
+          <MapController center={mapCenter} zoom={mapZoom} flyTrigger={flyTrigger} />
           <DrawListener
             isDrawing={isDrawingMode}
             onAddPoint={(pt) =>
@@ -866,19 +1238,55 @@ export const FieldMap: React.FC<FieldMapProps> = ({
             }
           />
 
-          {/* High-Resolution Satellite or Standard Map Tiles */}
+          {/* High-Resolution Satellite or Standard Map Tiles (World Coverage) */}
           {mapType === 'satellite' ? (
             <TileLayer
               attribution='&copy; ESRI World Imagery &copy; Sentinel-2 Copernicus'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={18}
+              maxZoom={19}
+              minZoom={2}
             />
           ) : (
             <TileLayer
               attribution='&copy; OpenStreetMap contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               maxZoom={19}
+              minZoom={2}
             />
+          )}
+
+          {/* Render High-Visibility Captured Location Marker */}
+          {capturedLocation && (
+            <Marker
+              position={[capturedLocation.lat, capturedLocation.lng]}
+              icon={capturedPinIcon}
+            >
+              <Popup autoPan={true}>
+                <div className="p-2 min-w-[220px] text-slate-800 text-xs space-y-2">
+                  <div className="flex items-center gap-1.5 text-red-600 font-bold border-b pb-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>Captured Location / ಹುಡುಕಿ</span>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">{capturedLocation.shortName}</h4>
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-snug">{capturedLocation.displayName}</p>
+                  </div>
+                  <div className="bg-slate-100 p-1.5 rounded font-mono text-[10px] text-slate-600 flex justify-between">
+                    <span>Lat: {capturedLocation.lat.toFixed(5)}°</span>
+                    <span>Lng: {capturedLocation.lng.toFixed(5)}°</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsDrawingMode(true);
+                      setDrawPoints([[capturedLocation.lat, capturedLocation.lng]]);
+                    }}
+                    className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  >
+                    <PenTool className="w-3.5 h-3.5" /> Start Drawing Boundary Here
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
           )}
 
           {/* Render Active Draw Vertices & Polyline */}

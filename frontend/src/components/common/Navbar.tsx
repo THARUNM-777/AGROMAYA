@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { notificationsApi } from '../../services/api';
@@ -122,6 +122,166 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
 
           {user && getRoleBadge()}
         </div>
+
+        {/* Center: Top Navigation Menu Bar (Never blank) */}
+        {user && (
+          <nav className="hidden md:flex items-center gap-1 bg-slate-100/90 px-2 py-1 rounded-2xl border border-slate-200/80 shadow-2xs">
+            {((role || user.role || 'FARMER').toUpperCase() === 'FARMER') && (
+              <>
+                <NavLink
+                  to="/farmer/home"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Home
+                </NavLink>
+                <NavLink
+                  to="/farmer/my-farm"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  My Farm & Radar
+                </NavLink>
+                <NavLink
+                  to="/farmer/requests"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Requests
+                </NavLink>
+                <NavLink
+                  to="/farmer/wallet"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  My Credits
+                </NavLink>
+                <NavLink
+                  to="/farmer/marketplace"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Marketplace
+                </NavLink>
+              </>
+            )}
+
+            {((role || user.role) === 'BIOCHAR_COMPANY') && (
+              <>
+                <NavLink
+                  to="/company/overview"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Overview
+                </NavLink>
+                <NavLink
+                  to="/company/live-map"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Live Radar
+                </NavLink>
+                <NavLink
+                  to="/company/harvest-detection"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Detection
+                </NavLink>
+                <NavLink
+                  to="/company/panchayats"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Panchayats
+                </NavLink>
+                <NavLink
+                  to="/company/analytics"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Analytics
+                </NavLink>
+              </>
+            )}
+
+            {((role || user.role) === 'GRAM_PANCHAYAT') && (
+              <>
+                <NavLink
+                  to="/panchayat/overview"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Overview
+                </NavLink>
+                <NavLink
+                  to="/panchayat/map"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Land Map
+                </NavLink>
+                <NavLink
+                  to="/panchayat/farmers"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Farmers
+                </NavLink>
+                <NavLink
+                  to="/panchayat/intake"
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive ? 'bg-emerald-800 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                    }`
+                  }
+                >
+                  Weighbridge
+                </NavLink>
+              </>
+            )}
+          </nav>
+        )}
 
         {/* Right Nav Actions */}
         <div className="flex items-center gap-2 sm:gap-3">

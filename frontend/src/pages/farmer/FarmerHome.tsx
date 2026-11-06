@@ -59,7 +59,7 @@ export const FarmerHome: React.FC = () => {
             {t('farmerGreeting')}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {user?.name || 'Ningappa Pujar'}
+            {user?.name || 'Tarun M'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-300">
             Kondajji Village • Harihara Rural Gram Panchayat • Davangere, Karnataka
