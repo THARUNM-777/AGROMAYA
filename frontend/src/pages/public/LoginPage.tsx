@@ -68,16 +68,15 @@ export const LoginPage: React.FC = () => {
     else navigate('/farmer/home');
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErrorMessage('');
     try {
-      const user = await login(loginIdentifier || '9019789795', loginPassword || 'tarun123');
+      const user = await login(loginIdentifier.trim() || 'tarun', loginPassword || 'tarun123');
       routeByRole(user.role);
-    } catch (err: any) {
-      setErrorMessage(
-        err.response?.data?.message || err.message || 'Login failed. Please verify your email/phone and password.'
-      );
+    } catch (_err: any) {
+      await demoLogin('FARMER');
+      routeByRole('FARMER');
     }
   };
 
@@ -87,32 +86,33 @@ export const LoginPage: React.FC = () => {
     try {
       const payload: any = {
         role: regRole,
-        name: regName,
-        phone: regPhone,
-        email: regEmail || undefined,
-        password: regPassword,
-        district,
+        name: regName.trim() || 'Tarun M',
+        phone: regPhone.trim() || '9019789795',
+        email: regEmail.trim() || 'taruntarudvg@gmail.com',
+        password: regPassword || 'tarun123',
+        district: district || 'Davangere',
       };
 
       if (regRole === 'FARMER') {
-        payload.surveyNumber = surveyNumber || `SY-${Math.floor(100 + Math.random() * 900)}/1`;
+        payload.surveyNumber = surveyNumber || `SY-45/1`;
         payload.totalLandAcres = parseFloat(totalLandAcres) || 3.0;
         payload.preferredLang = preferredLang;
       } else if (regRole === 'BIOCHAR_COMPANY') {
-        payload.companyName = companyName || regName;
+        payload.companyName = companyName || regName || 'AgroMaya Biochar Industries';
         payload.capacityTonnes = parseFloat(capacityTonnes) || 50;
       } else if (regRole === 'SUPPLIER') {
-        payload.supplierName = supplierName || regName;
-        payload.gstin = gstin || `GSTIN29AAACA${Math.floor(1000 + Math.random() * 9000)}Z5`;
+        payload.supplierName = supplierName || regName || 'Kaveri Bio-Inputs Hub';
+        payload.gstin = gstin || `GSTIN29AAACA1234Z5`;
       }
 
       const user = await register(payload);
-      setSuccessMessage('Account registered successfully! Redirecting to your dashboard...');
+      setSuccessMessage('Entering website as Tarun M...');
       setTimeout(() => {
         routeByRole(user.role);
-      }, 1000);
-    } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Registration failed. Please check your inputs.');
+      }, 400);
+    } catch (_err: any) {
+      await demoLogin(regRole);
+      routeByRole(regRole);
     }
   };
 
@@ -177,6 +177,37 @@ export const LoginPage: React.FC = () => {
             </button>
           </div>
 
+          {/* Instant 1-Click Direct Access (No Gmail/Password Required) */}
+          <button
+            type="button"
+            onClick={() => handleSignIn()}
+            className="w-full mb-4 flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-900 text-white font-bold text-xs shadow-lg hover:shadow-xl transition-all border border-emerald-400/60 group cursor-pointer hover:scale-[1.01]"
+          >
+            <div className="flex items-center gap-3 text-left">
+              <div className="w-9 h-9 rounded-xl bg-lime-400 text-emerald-950 flex items-center justify-center font-black text-base shadow">
+                🚀
+              </div>
+              <div>
+                <span className="block text-sm font-black text-lime-300">
+                  Go Straight to Website as Tarun M
+                </span>
+                <span className="block text-[11px] text-slate-200 font-normal">
+                  No registered Gmail or password needed • 1-Click Access
+                </span>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-lime-300 group-hover:translate-x-1.5 transition-transform shrink-0" />
+          </button>
+
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-2 text-slate-400 font-medium">or type any text below to enter</span>
+            </div>
+          </div>
+
           {/* Feedback messages */}
           {errorMessage && (
             <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5 animate-fade-in">
@@ -197,7 +228,7 @@ export const LoginPage: React.FC = () => {
             <form onSubmit={handleSignIn} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Email Address or Mobile Number
+                  Type Any Text / Name / Phone / Letters
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -205,7 +236,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder="Enter any letters, phone (9019789795), or email"
+                    placeholder="Type anything (e.g. tarun, dvg, 123) or leave as is"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     className="block w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -215,7 +246,7 @@ export const LoginPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Password
+                  Password (Any text or leave blank)
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -223,7 +254,7 @@ export const LoginPage: React.FC = () => {
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter any password"
+                    placeholder="Type any password or leave blank"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     className="block w-full pl-9 pr-10 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -237,20 +268,20 @@ export const LoginPage: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
-                  💡 Type any letter or password — automatically logs in as <strong className="text-emerald-700 font-bold">Tarun M</strong>!
+                  💡 Type any text or password — automatically logs in as <strong className="text-emerald-700 font-bold">Tarun M</strong>!
                 </p>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 shadow-md transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 shadow-md transition-all disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    Sign In to Ecosystem
+                    <span>Enter Website as Tarun M</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -312,15 +343,14 @@ export const LoginPage: React.FC = () => {
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   {regRole === 'FARMER'
-                    ? 'Farmer Full Name / ರೈತರ ಹೆಸರು'
+                    ? 'Farmer Full Name / ಹೆಸರು'
                     : regRole === 'BIOCHAR_COMPANY'
                     ? 'Authorized Representative / Officer Name'
                     : 'Supplier / Dealer Representative Name'}
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. Basavaraj Hiremath"
+                  placeholder="e.g. Tarun M or any name"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   className="w-full px-3 py-2 border rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -331,12 +361,11 @@ export const LoginPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Mobile Number / ಮೊಬೈಲ್
+                    Mobile Number (Optional)
                   </label>
                   <input
-                    type="tel"
-                    required
-                    placeholder="9845100099"
+                    type="text"
+                    placeholder="9019789795 or any number"
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     className="w-full px-3 py-2 border rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -349,7 +378,7 @@ export const LoginPage: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    required
+                    placeholder="Davangere"
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
                     className="w-full px-3 py-2 border rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -363,8 +392,8 @@ export const LoginPage: React.FC = () => {
                   Email Address (Optional)
                 </label>
                 <input
-                  type="email"
-                  placeholder="e.g. basavaraj@gmail.com"
+                  type="text"
+                  placeholder="any text or email (e.g. tarun@gmail.com)"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
                   className="w-full px-3 py-2 border rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -380,7 +409,7 @@ export const LoginPage: React.FC = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. SY-142/2"
+                      placeholder="e.g. SY-45"
                       value={surveyNumber}
                       onChange={(e) => setSurveyNumber(e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -466,12 +495,11 @@ export const LoginPage: React.FC = () => {
               {/* Password */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Create Account Password
+                  Password (Any text or leave blank)
                 </label>
                 <input
                   type="password"
-                  required
-                  placeholder="Minimum 6 characters"
+                  placeholder="Type any password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                   className="w-full px-3 py-2 border rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -481,14 +509,14 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 shadow-md transition-all disabled:opacity-50"
+                className="w-full mt-2 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-emerald-800 to-emerald-700 hover:from-emerald-900 hover:to-emerald-800 shadow-md transition-all disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <UserPlus className="w-4 h-4" />
-                    Register & Enter Ecosystem
+                    <span>Register & Enter Website as Tarun M</span>
                   </>
                 )}
               </button>
