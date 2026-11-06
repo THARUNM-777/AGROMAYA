@@ -1,0 +1,18 @@
+{
+  "name": "agromaya",
+  "version": "1.0.0",
+  "description": "AGROMAYA – AI-Powered Smart Agriculture Waste-to-Biochar Ecosystem",
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npx tsx src/server.ts",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:ai": "cd ai-service && python main.py",
+    "seed": "cd backend && npm run seed",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.5"
+  }
+}

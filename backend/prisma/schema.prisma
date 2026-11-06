@@ -1,0 +1,459 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  role         String    // "BIOCHAR_COMPANY" | "GRAM_PANCHAYAT" | "FARMER" | "SUPPLIER" | "ADMIN"
+  name         String
+  phone        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  farmerProfile   Farmer?
+  companyProfile  BiocharCompany?
+  supplierProfile Supplier?
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+}
+
+model Panchayat {
+  id             String    @id @default(uuid())
+  name           String    @unique
+  district       String
+  taluk          String
+  contactOfficer String
+  phone          String
+  officeAddress  String
+  createdAt      DateTime  @default(now())
+
+  villages          Village[]
+  farmers           Farmer[]
+  fields            AgriculturalField[]
+  requests          FeedstockRequest[]
+  collectionCenters PanchayatCollectionCenter[]
+}
+
+model PanchayatCollectionCenter {
+  id                String    @id @default(uuid())
+  panchayatId       String
+  panchayat         Panchayat @relation(fields: [panchayatId], references: [id])
+  centerName        String
+  address           String
+  latitude          Float
+  longitude         Float
+  contactPerson     String
+  phone             String
+  capacityTonnes    Float     @default(150.0)
+  currentStockTonnes Float    @default(0.0)
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+}
+
+model Village {
+  id          String    @id @default(uuid())
+  name        String
+  panchayatId String
+  panchayat   Panchayat @relation(fields: [panchayatId], references: [id])
+  pinCode     String
+  latitude    Float
+  longitude   Float
+
+  farmers     Farmer[]
+  fields      AgriculturalField[]
+}
+
+model BiocharCompany {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id])
+  companyName    String
+  registrationNo String    @unique
+  contactPerson  String
+  contactPhone   String
+  address        String
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  requests       FeedstockRequest[]
+  verifications  FeedstockVerification[]
+  products       Product[]
+  payables       SupplierPayable[]
+}
+
+model Supplier {
+  id             String    @id @default(uuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id])
+  supplierName   String
+  contactPerson  String
+  contactPhone   String
+  contactEmail   String
+  address        String
+  gstin          String?
+  bankAccountNo  String?
+  bankIfsc       String?
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  products       Product[]
+  payables       SupplierPayable[]
+  shipments      Shipment[]
+}
+
+model Farmer {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id])
+  fullName           String
+  phone              String    @unique
+  district           String    @default("Davangere")
+  villageId          String
+  village            Village   @relation(fields: [villageId], references: [id])
+  panchayatId        String
+  panchayat          Panchayat @relation(fields: [panchayatId], references: [id])
+  surveyNumber       String
+  totalLandAcres     Float
+  registrationStatus String    @default("VERIFIED") // "VERIFIED" | "PENDING"
+  bankAccountRef     String?
+  preferredLang      String    @default("en") // "en" | "kn"
+  createdAt          DateTime  @default(now())
+
+  fields             AgriculturalField[]
+  requests           FeedstockRequest[]
+  collections        FeedstockCollection[]
+  wallet             CreditWallet?
+  orders             Order[]
+  biometricEnrollment BiometricEnrollment?
+}
+
+model BiometricEnrollment {
+  id                 String    @id @default(uuid())
+  farmerId           String    @unique
+  farmer             Farmer    @relation(fields: [farmerId], references: [id])
+  biometricVectorJson String   // JSON array of 128 normalized face embedding features
+  biometricTemplateHash String // SHA-256 hash of template for cryptographic verification
+  consentGiven       Boolean   @default(true)
+  consentLanguage    String    @default("en") // "en" | "kn"
+  consentTimestamp   DateTime  @default(now())
+  status             String    @default("ENROLLED") // "ENROLLED" | "REVOKED" | "REQUIRES_UPDATE"
+  qualityScore       Float     @default(85.0)
+  enrolledBy         String?   // Operator User ID
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model AgriculturalField {
+  id                     String    @id @default(uuid())
+  fieldCode              String    @unique // e.g. "KA-DVG-128"
+  farmerId               String?
+  farmer                 Farmer?   @relation(fields: [farmerId], references: [id])
+  villageId              String
+  village                Village   @relation(fields: [villageId], references: [id])
+  panchayatId            String
+  panchayat              Panchayat @relation(fields: [panchayatId], references: [id])
+  surveyNumber           String
+  cropType               String    // "Paddy", "Maize", "Sugarcane", etc.
+  areaAcres              Float
+  status                 String    @default("GROWING") // "GROWING" | "HARVEST_APPROACHING" | "HARVEST_READY" | "COLLECTED" | "UNVERIFIED"
+  harvestReadinessPct    Float     @default(0.0)
+  estimatedResidueTonnes Float     @default(0.0)
+  harvestWindow          String?
+  centerLat              Float
+  centerLng              Float
+  polygonCoordinatesJson String    // JSON string of [[lat, lng], [lat, lng], ...]
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  cropRecords            CropRecord[]
+  satelliteObservations  SatelliteObservation[]
+  harvestPredictions     HarvestPrediction[]
+  feedstockRequests      FeedstockRequest[]
+  collections            FeedstockCollection[]
+}
+
+model CropRecord {
+  id                 String            @id @default(uuid())
+  fieldId            String
+  field              AgriculturalField @relation(fields: [fieldId], references: [id])
+  cropName           String
+  sowingDate         DateTime
+  expectedHarvestDate DateTime
+  yieldPerAcreTonnes Float
+  residueRatio       Float
+}
+
+model SatelliteObservation {
+  id              String            @id @default(uuid())
+  fieldId         String
+  field           AgriculturalField @relation(fields: [fieldId], references: [id])
+  satelliteSource String            @default("Copernicus Sentinel-2 MSI L2A")
+  acquisitionDate DateTime          @default(now())
+  ndvi            Float
+  ndwi            Float             @default(0.18)
+  evi             Float
+  cloudCoverPct   Float             @default(0.0)
+  rawDataJson     String?
+}
+
+model HarvestPrediction {
+  id             String            @id @default(uuid())
+  fieldId        String
+  field          AgriculturalField @relation(fields: [fieldId], references: [id])
+  predictionDate DateTime          @default(now())
+  readinessPct   Float
+  confidencePct  Float
+  cropStage      String
+  estimatedResidueTonnes Float
+}
+
+model FeedstockRequest {
+  id               String            @id @default(uuid())
+  requestNumber    String            @unique // e.g. "REQ-2026-081"
+  companyId        String
+  company          BiocharCompany    @relation(fields: [companyId], references: [id])
+  farmerId         String?
+  farmer           Farmer?           @relation(fields: [farmerId], references: [id])
+  panchayatId      String
+  panchayat        Panchayat         @relation(fields: [panchayatId], references: [id])
+  fieldId          String?
+  field            AgriculturalField? @relation(fields: [fieldId], references: [id])
+  requestMethod    String            @default("DIRECT_FARMER") // "DIRECT_FARMER" | "BULK_DISCOVERY"
+  cropType         String
+  requestedTonnes  Float
+  offeredRewardPerKg Float           @default(2.0)
+  status           String            @default("PENDING") // "PENDING" | "ACCEPTED" | "REJECTED" | "SCHEDULED" | "COMPLETED"
+  scheduledDate    DateTime?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  collections      FeedstockCollection[]
+  schedule         CollectionSchedule?
+}
+
+model CollectionSchedule {
+  id               String           @id @default(uuid())
+  requestId        String           @unique
+  request          FeedstockRequest @relation(fields: [requestId], references: [id])
+  collectionDate   DateTime
+  collectionCenter String
+  transportStatus  String           @default("SCHEDULED") // "SCHEDULED" | "EN_ROUTE" | "ARRIVED" | "COMPLETED"
+  vehicleNumber    String?
+  driverContact    String?
+  createdAt        DateTime         @default(now())
+}
+
+model FeedstockCollection {
+  id                 String            @id @default(uuid())
+  collectionNumber   String            @unique // e.g. "COL-2026-012"
+  requestId          String
+  request            FeedstockRequest  @relation(fields: [requestId], references: [id])
+  fieldId            String
+  field              AgriculturalField @relation(fields: [fieldId], references: [id])
+  farmerId           String
+  farmer             Farmer            @relation(fields: [farmerId], references: [id])
+  collectionDate     DateTime          @default(now())
+  actualWeightKg     Float
+  residueCategory    String            // "Paddy Straw", "Corn Stover", "Bagasse", etc.
+  qualityGrade       String            @default("A") // "A" | "B" | "C"
+  moisturePct        Float             @default(12.5)
+  collectionLocation String
+  weighbridgeSlipUrl String?
+  deliveryPhotoUrl   String?
+  verificationMethod String            @default("BIOMETRIC_FACE") // "BIOMETRIC_FACE" | "MANUAL_OPERATOR_OVERRIDE"
+  operatorId         String?
+  status             String            @default("PENDING_VERIFICATION") // "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED"
+  createdAt          DateTime          @default(now())
+
+  verification       FeedstockVerification?
+}
+
+model FeedstockVerification {
+  id                   String              @id @default(uuid())
+  collectionId         String              @unique
+  collection           FeedstockCollection @relation(fields: [collectionId], references: [id])
+  verifiedByCompanyId  String
+  verifiedByCompany    BiocharCompany      @relation(fields: [verifiedByCompanyId], references: [id])
+  actualQuantityTonnes Float
+  qualityGrade         String
+  moisturePct          Float
+  verificationStatus   String              @default("APPROVED") // "APPROVED" | "REJECTED"
+  remarks              String?
+  rewardCreditsAwarded Float               @default(0.0)
+  cashbackAwarded      Float               @default(0.0)
+  verifiedAt           DateTime            @default(now())
+}
+
+model CreditWallet {
+  id                 String              @id @default(uuid())
+  farmerId           String              @unique
+  farmer             Farmer              @relation(fields: [farmerId], references: [id])
+  availableCredits   Float               @default(0.0)
+  totalEarnedCredits Float               @default(0.0)
+  totalSpentCredits  Float               @default(0.0)
+  totalCashReceived  Float               @default(0.0)
+  pendingCash        Float               @default(0.0)
+  updatedAt          DateTime            @updatedAt
+
+  transactions       CreditTransaction[]
+  cashPayments       CashPayment[]
+}
+
+model CreditTransaction {
+  id           String       @id @default(uuid())
+  walletId     String
+  wallet       CreditWallet @relation(fields: [walletId], references: [id])
+  farmerId     String
+  type         String       // "CREDIT_EARNED" | "CREDIT_SPENT" | "CASH_DISBURSED" | "CREDIT_REFUND" | "ADJUSTMENT"
+  amount       Float
+  description  String
+  referenceId  String?
+  balanceAfter Float
+  createdAt    DateTime     @default(now())
+}
+
+model CashPayment {
+  id             String       @id @default(uuid())
+  walletId       String
+  wallet         CreditWallet @relation(fields: [walletId], references: [id])
+  farmerId       String
+  amount         Float
+  paymentMethod  String       @default("DIRECT_BANK_TRANSFER") // "DIRECT_BANK_TRANSFER" | "UPI" | "DEMO_SIMULATION"
+  transactionRef String       @unique
+  status         String       @default("PROCESSED") // "PROCESSING" | "PROCESSED" | "FAILED"
+  disbursedAt    DateTime     @default(now())
+}
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  icon        String?
+  products    Product[]
+}
+
+model Product {
+  id            String          @id @default(uuid())
+  companyId     String
+  company       BiocharCompany  @relation(fields: [companyId], references: [id])
+  supplierId    String?
+  supplier      Supplier?       @relation(fields: [supplierId], references: [id])
+  categoryId    String
+  category      ProductCategory @relation(fields: [categoryId], references: [id])
+  name          String
+  description   String
+  priceInInr    Float
+  creditPrice   Float           // 1 Credit = ~1 INR equivalent
+  stockQuantity Int             @default(100)
+  imageUrl      String
+  isFeatured    Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+
+  orderItems    OrderItem[]
+}
+
+model Order {
+  id                  String            @id @default(uuid())
+  orderNumber         String            @unique // e.g. "ORD-2026-904"
+  farmerId            String
+  farmer              Farmer            @relation(fields: [farmerId], references: [id])
+  totalAmountCredits  Float
+  totalAmountInr      Float             @default(0.0)
+  status              String            @default("CONFIRMED") // "PROCESSING" | "CONFIRMED" | "COMPANY_PAID" | "DISPATCHED" | "DELIVERED" | "CANCELLED"
+  deliveryAddress     String
+  orderedAt           DateTime          @default(now())
+
+  items               OrderItem[]
+  payables            SupplierPayable[]
+  shipments           Shipment[]
+}
+
+model OrderItem {
+  id               String  @id @default(uuid())
+  orderId          String
+  order            Order   @relation(fields: [orderId], references: [id])
+  productId        String
+  product          Product @relation(fields: [productId], references: [id])
+  quantity         Int
+  unitCreditPrice  Float
+  subtotalCredits  Float
+}
+
+model SupplierPayable {
+  id               String           @id @default(uuid())
+  orderId          String
+  order            Order            @relation(fields: [orderId], references: [id])
+  supplierId       String
+  supplier         Supplier         @relation(fields: [supplierId], references: [id])
+  companyId        String
+  company          BiocharCompany   @relation(fields: [companyId], references: [id])
+  payableAmountInr Float
+  creditsRedeemed  Float
+  status           String           @default("PENDING") // "PENDING" | "PAID" | "FAILED" | "CANCELLED"
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  payments         SupplierPayment[]
+}
+
+model SupplierPayment {
+  id                 String          @id @default(uuid())
+  payableId          String
+  payable            SupplierPayable @relation(fields: [payableId], references: [id])
+  paymentGateway     String          @default("RAZORPAY_SANDBOX") // "RAZORPAY_SANDBOX" | "BANK_TRANSFER" | "UPI"
+  paymentReference   String          @unique // e.g. "pay_rzp_live_98124819" or "NEFT-KA-881923"
+  amountPaid         Float
+  currency           String          @default("INR")
+  gatewayResponseJson String?
+  status             String          @default("SUCCESS") // "SUCCESS" | "FAILED" | "PENDING"
+  paidAt             DateTime        @default(now())
+}
+
+model Shipment {
+  id                    String    @id @default(uuid())
+  orderId               String
+  order                 Order     @relation(fields: [orderId], references: [id])
+  supplierId            String
+  supplier              Supplier  @relation(fields: [supplierId], references: [id])
+  carrierName           String    @default("VRL Logistics")
+  trackingNumber        String    @unique
+  dispatchDate          DateTime  @default(now())
+  estimatedDeliveryDate DateTime?
+  actualDeliveryDate    DateTime?
+  status                String    @default("DISPATCHED") // "PREPARING" | "DISPATCHED" | "IN_TRANSIT" | "DELIVERED"
+  trackingNotes         String?
+  updatedAt             DateTime  @updatedAt
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  recipientRole String   // "ALL" | "BIOCHAR_COMPANY" | "GRAM_PANCHAYAT" | "FARMER" | "SUPPLIER"
+  recipientId   String?
+  user          User?    @relation(fields: [recipientId], references: [id])
+  title         String
+  message       String
+  type          String   // "INFO" | "SUCCESS" | "WARNING" | "HARVEST" | "REWARD"
+  read          Boolean  @default(false)
+  actionUrl     String?
+  createdAt     DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  user       User?    @relation(fields: [actorId], references: [id])
+  actorRole  String
+  action     String   // "REQUEST_CREATED" | "FEEDSTOCK_VERIFIED" | "CREDIT_AWARDED" | "ORDER_PLACED" | "SUPPLIER_PAID" | "SHIPMENT_DISPATCHED"
+  entityName String
+  entityId   String
+  detailsJson String?
+  timestamp  DateTime @default(now())
+}

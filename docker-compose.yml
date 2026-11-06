@@ -1,0 +1,90 @@
+# ==============================================================
+# AGROMAYA / BIOCHAR CONNECT - Docker Compose Orchestration
+# 1-Command Production Stack: AI Microservice + Backend + Frontend
+# ==============================================================
+
+version: '3.8'
+
+services:
+  # ------------------------------------------------------------
+  # 1. AI, Remote Sensing & Biometric Verification Engine
+  # ------------------------------------------------------------
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: agromaya-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - STAC_API_URL=https://earth-search.aws.element84.com/v1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - agromaya-network
+
+  # ------------------------------------------------------------
+  # 2. Backend REST API Gateway (Node.js + Prisma ORM)
+  # ------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agromaya-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - AI_SERVICE_URL=http://ai-service:8000
+      - DATABASE_URL=file:/app/prisma/dev.db
+      - JWT_SECRET=agromaya-hackathon-super-secret-key-2026
+      - NODE_ENV=production
+    volumes:
+      - agromaya_db_data:/app/prisma
+    depends_on:
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - agromaya-network
+
+  # ------------------------------------------------------------
+  # 3. React Frontend Web Application (Vite + Nginx)
+  # ------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agromaya-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - agromaya-network
+
+# --------------------------------------------------------------
+# Persistent Volumes & Private Network
+# --------------------------------------------------------------
+volumes:
+  agromaya_db_data:
+    driver: local
+
+networks:
+  agromaya-network:
+    driver: bridge
